@@ -7,7 +7,7 @@ set(CMAKE_DEPENDS_GENERATOR "Unix Makefiles")
 # The top level Makefile was generated from the following files:
 set(CMAKE_MAKEFILE_DEPENDS
   "CMakeCache.txt"
-  "/Users/lazycodebaker/Documents/Dev/CPP/platformer_2d/CMakeLists.txt"
+  "/Users/lazycodebaker/Documents/Dev/CPP/platformer_2d_temp/CMakeLists.txt"
   "CMakeFiles/4.2.0/CMakeCXXCompiler.cmake"
   "CMakeFiles/4.2.0/CMakeSystem.cmake"
   "/Users/lazycodebaker/miniconda3/lib/cmake/fmt/fmt-config-version.cmake"
@@ -23,6 +23,8 @@ set(CMAKE_MAKEFILE_DEPENDS
   "/opt/homebrew/lib/cmake/SDL2_image/Findwebp.cmake"
   "/opt/homebrew/lib/cmake/SDL2_image/sdl2_image-config-version.cmake"
   "/opt/homebrew/lib/cmake/SDL2_image/sdl2_image-config.cmake"
+  "/opt/homebrew/lib/cmake/SDL2_ttf/sdl2_ttf-config-version.cmake"
+  "/opt/homebrew/lib/cmake/SDL2_ttf/sdl2_ttf-config.cmake"
   "/opt/homebrew/lib/cmake/libavif/libavif-config-release.cmake"
   "/opt/homebrew/lib/cmake/libavif/libavif-config-version.cmake"
   "/opt/homebrew/lib/cmake/libavif/libavif-config.cmake"

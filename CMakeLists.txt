@@ -10,6 +10,7 @@ option(TILE_TEST "Build tile_test only" OFF)
 
 find_package(SDL2 REQUIRED)
 find_package(SDL2_image REQUIRED)
+find_package(SDL2_ttf REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(nlohmann_json 3.2.0 REQUIRED)
 
@@ -29,6 +30,7 @@ if(TILE_TEST)
         PRIVATE
         SDL2::SDL2
         SDL2_image::SDL2_image
+        SDL2_ttf::SDL2_ttf
         spdlog::spdlog
         nlohmann_json::nlohmann_json
     )
@@ -54,6 +56,7 @@ else()
         PRIVATE
         SDL2::SDL2
         SDL2_image::SDL2_image
+        SDL2_ttf::SDL2_ttf
         spdlog::spdlog
         nlohmann_json::nlohmann_json
     )

@@ -7,7 +7,7 @@
 Sprite SpriteSheet::TILE_CLOUD(23);
 Sprite SpriteSheet::TILE_WALL(19);
 Sprite SpriteSheet::TILE_GROUND(3);
-Sprite SpriteSheet::TILE_SURFACE(4);
+Sprite SpriteSheet::TILE_SURFACE(0);
 
 // using that enemy as player for now : col : 3 , row , 6
 Sprite SpriteSheet::PLAYER_IDLE_LEFT(0);

@@ -23,11 +23,16 @@ namespace config
 
     namespace tile
     {
-        inline constexpr int tiles_per_row = 8;
+        inline constexpr int tiles_per_row = 9;
         inline constexpr int size = 16;
         inline constexpr int map_width = 38;
-        inline constexpr int map_height = 14;
-        inline constexpr int scale = 1;
+        inline constexpr int map_height = size * 10;
+        inline constexpr float scale = 2.0f;
+
+        inline constexpr int scaled_size = int(size * scale);
+
+        inline constexpr int screen_tiles_x = config::window::width / scaled_size;
+        inline constexpr int screen_tiles_y = config::window::height / scaled_size;
 
     }
 };

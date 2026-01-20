@@ -30,10 +30,10 @@ Sprite Tile::getSprite() const
 
 Vector2f Tile::getWorldPosition() const
 {
-    return Vector2f(_gridX * config::tile::size, _gridY * config::tile::size);
+    return Vector2f(_gridX * config::tile::scaled_size, _gridY * config::tile::scaled_size);
 }
 
 Vector2f Tile::getCenter() const
 {
-    return Vector2f(_gridX * config::tile::size + config::tile::size / 2.0f, _gridY * config::tile::size + config::tile::size / 2.0f);
+    return Vector2f(_gridX * config::tile::scaled_size + config::tile::scaled_size / 2.0f, _gridY * config::tile::scaled_size + config::tile::scaled_size / 2.0f);
 }

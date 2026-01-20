@@ -24,8 +24,8 @@ Game::Game(int width, int height)
         "SDL2 Platformer 2D", width, height);
     _camera = std::make_unique<Camera>(width, height);
 
-    const std::string spritesheetPath = "assets/map/spritesheet.png";
-    const std::string playerSpritesheetPath = "assets/player/spritesheet.png";
+    const std::string spritesheetPath = "assets/spritesheet_tiles_resized.png";
+    const std::string playerSpritesheetPath = "assets/spritesheet_characters.png";
 
     try
     {
@@ -46,7 +46,7 @@ Game::Game(int width, int height)
     spawnPoint = Vector2f(0, 0);
     _player = std::make_unique<Player>(spawnPoint, 64, 64, _tileMap.get(), _renderer->getPlayerSpriteSheet());
 
-    _tileMap->loadFromJSON("assets/map/map.json");
+    _tileMap->loadFromJSON("assets/map.json");
 
     CORE_WARN("Engine Initialized");
 }

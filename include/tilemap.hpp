@@ -14,6 +14,8 @@ public:
     TileMap(SpriteSheet *spriteSheet, int width, int height);
     ~TileMap() = default;
 
+    void setTileScreen(int sx, int sy, Tile::TileType type);
+
     void setTile(int gridX, int gridY, Tile::TileType type);
     Tile *getTile(int gridX, int gridY);
     const Tile *getTile(int gridX, int gridY) const;

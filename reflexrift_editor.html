@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Reflex Rift - Level Architect</title>
+    <style>
+        :root {
+            --bg-dark: #1e1e1e;
+            --bg-panel: #252526;
+            --bg-header: #333333;
+            --accent: #007acc;
+            --accent-hover: #0062a3;
+            --text-main: #cccccc;
+            --text-muted: #858585;
+            --border: #3e3e42;
+            --input-bg: #3c3c3c;
+            --danger: #d94444;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Inter, sans-serif;
+            display: flex;
+            height: 100vh;
+            user-select: none;
+        }
+
+        /* --- SIDEBAR --- */
+        #sidebar {
+            width: 320px;
+            background-color: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        .sidebar-header {
+            padding: 10px 15px;
+            background: var(--bg-header);
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .scroll-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #666; }
+
+        details { margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        summary { cursor: pointer; font-weight: 600; padding: 5px 0; outline: none; list-style: none; color: white; }
+        summary::-webkit-details-marker { display: none; }
+        summary:after { content: "▼"; float: right; font-size: 10px; color: var(--text-muted); }
+        details[open] summary:after { content: "▲"; }
+
+        .control-group { display: flex; flex-direction: column; gap: 8px; margin-top: 5px; }
+        .row { display: flex; gap: 5px; }
+        
+        label { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; justify-content: space-between; }
+        
+        input, select, button {
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 6px 8px;
+            font-size: 12px;
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        input:focus, select:focus { border-color: var(--accent); }
+        
+        button { cursor: pointer; transition: background 0.2s; text-align: center; }
+        button:hover { background-color: #4a4a4a; }
+        button.primary { background-color: var(--accent); border: none; }
+        button.primary:hover { background-color: var(--accent-hover); }
+        button.danger { color: #ff6b6b; border-color: #5a2a2a; }
+        button.danger:hover { background: #5a2a2a; }
+
+        /* Spritesheet Viewer */
+        #tileset-wrapper {
+            width: 100%;
+            height: 250px;
+            background: #111;
+            overflow: auto;
+            border: 1px solid var(--border);
+            position: relative;
+            image-rendering: pixelated;
+        }
+
+        #tileset-img {
+            display: block;
+            cursor: crosshair;
+        }
+
+        #tileset-selection {
+            position: absolute;
+            border: 2px solid #ff0000;
+            box-sizing: border-box;
+            pointer-events: none;
+            display: none;
+            box-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
+        }
+        
+        .layer-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 8px;
+            background: #2d2d2d;
+            border: 1px solid transparent;
+            border-radius: 3px;
+            margin-bottom: 2px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .layer-item:hover { background: #353535; }
+        .layer-item.active { background: #37373d; border-color: var(--accent); }
+        .layer-icon { margin-right: 8px; color: var(--accent); }
+
+        /* --- MAIN VIEWPORT --- */
+        #viewport {
+            flex: 1;
+            position: relative;
+            background: #111;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+        /* Cursor overrides for modes */
+        #viewport.mode-pan { cursor: grab; }
+        #viewport.mode-pan:active { cursor: grabbing; }
+
+        #editor-canvas {
+            display: block;
+            image-rendering: pixelated;
+        }
+
+        #toolbar {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-panel);
+            padding: 5px 10px;
+            border-radius: 20px;
+            display: flex;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            border: 1px solid var(--border);
+        }
+        #toolbar button { background: transparent; border: none; font-size: 14px; padding: 5px 10px; }
+        #toolbar button:hover { background: #333; border-radius: 10px; }
+        #toolbar button.active { color: var(--accent); font-weight: bold; }
+
+        /* Properties Panel */
+        .props-panel {
+            background: #2a2d2e;
+            padding: 10px;
+            border-left: 3px solid var(--accent);
+            font-size: 11px;
+            display: none;
+        }
+        
+        #status-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: var(--accent);
+            color: white;
+            font-size: 10px;
+            padding: 2px 10px;
+            pointer-events: none;
+        }
+
+        #drag-overlay {
+            position: absolute;
+            top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        #drag-overlay.active { opacity: 1; }
+
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <div id="sidebar">
+        <div class="sidebar-header">Reflex Rift Editor</div>
+        
+        <div class="scroll-area">
+            
+            <details open>
+                <summary>Project Settings</summary>
+                <div class="control-group">
+                    <div class="row">
+                        <input type="file" id="loadJsonInput" accept=".json" style="display:none">
+                        <button onclick="document.getElementById('loadJsonInput').click()">📂 Open JSON</button>
+                        <button onclick="exportJSON()" class="primary">💾 Save JSON</button>
+                    </div>
+                    <label>Tiles Per Row <input type="number" id="tilesPerRow" value="9" onchange="updateConfig()"></label>
+                </div>
+            </details>
+
+            <details open>
+                <summary>Spritesheet</summary>
+                <div class="control-group">
+                    <div id="tileset-wrapper">
+                        <img id="tileset-img" src="" alt="No Sprite Loaded">
+                        <div id="tileset-selection"></div>
+                    </div>
+                    <div style="font-size:10px; color:#666; text-align:center;">Drag .png here to load</div>
+                </div>
+            </details>
+
+            <details open>
+                <summary>Levels</summary>
+                <div class="control-group">
+                    <select id="level-select"></select>
+                    <button onclick="addLevel()">➕ New Level</button>
+                    <label>Level Name <input type="text" id="lvl-name" onchange="updateLevelMeta()" style="width:120px"></label>
+                    <label>Required Keys <input type="number" id="lvl-keys" value="0" onchange="updateLevelMeta()" style="width:50px"></label>
+                    <label style="cursor:pointer"><input type="checkbox" id="lvl-dark" onchange="updateLevelMeta()"> Dark Mode (Lighting)</label>
+                </div>
+            </details>
+
+            <details open>
+                <summary>Layers</summary>
+                <div class="control-group">
+                    <div class="row">
+                        <select id="layer-type-add" style="flex:1">
+                            <option value="Surface">Surface</option>
+                            <option value="Spikes">Spikes</option>
+                            <option value="Entities">Entities</option>
+                            <option value="MovingPlatforms">MovingPlatforms</option>
+                            <option value="FallingPlatform">FallingPlatform</option>
+                            <option value="Breakable">Breakable</option>
+                            <option value="Checkpoints">Checkpoints</option>
+                            <option value="Keys">Keys</option>
+                            <option value="Fire">Fire</option>
+                            <option value="LevelEnd">LevelEnd</option>
+                            <option value="HiddenArea">HiddenArea</option>
+                        </select>
+                        <button onclick="addLayer()">Add</button>
+                    </div>
+                    <div id="layer-list"></div>
+                    
+                    <div id="hidden-controls" style="display:none; background:#333; padding:5px; margin-top:5px; border-radius:3px;">
+                        <label style="color:var(--accent)">Hidden Area Bounds</label>
+                        <div class="row">
+                            <input id="ha-x" placeholder="X" type="number">
+                            <input id="ha-y" placeholder="Y" type="number">
+                        </div>
+                        <div class="row">
+                            <input id="ha-w" placeholder="W" type="number">
+                            <input id="ha-h" placeholder="H" type="number">
+                        </div>
+                        <button onclick="saveHiddenBounds()" style="width:100%; margin-top:5px">Update Bounds</button>
+                    </div>
+                </div>
+            </details>
+
+            <!-- TILE PROPERTIES -->
+            <div id="props-panel" class="props-panel">
+                <div style="font-weight:bold; margin-bottom:5px;">Tile Properties</div>
+                <div id="prop-coords" style="color:#888; margin-bottom:5px;"></div>
+                
+                <div id="prop-moving" class="control-group" style="display:none">
+                    <label>Min X <input type="number" id="p-minx" onchange="saveTileProps()" style="width:60px"></label>
+                    <label>Max X <input type="number" id="p-maxx" onchange="saveTileProps()" style="width:60px"></label>
+                    <label>Speed <input type="number" id="p-speed" step="0.1" onchange="saveTileProps()" style="width:60px"></label>
+                </div>
+                
+                <div id="prop-entity" class="control-group" style="display:none">
+                    <label>Type</label>
+                    <select id="p-type" onchange="saveTileProps()">
+                        <option value="EnemyPatrol">EnemyPatrol</option>
+                        <option value="EnemyFly">EnemyFly</option>
+                        <option value="EnemyShield">EnemyShield</option>
+                        <option value="Turret">Turret</option>
+                        <option value="Spring">Spring</option>
+                        <option value="Boss">Boss</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN VIEWPORT -->
+    <div id="viewport">
+        <div id="toolbar">
+            <button onclick="resetView()" title="Reset View">⌖</button>
+            <button id="btn-pan" onclick="setMode('pan')" title="Pan Tool (Hold Space)">🤚</button>
+            <button id="btn-select" onclick="setMode('select')" title="Select Mode (Shift+Click)">↖</button>
+            <button id="btn-paint" onclick="setMode('paint')" title="Paint Mode" class="active">🖌</button>
+        </div>
+        
+        <canvas id="editor-canvas"></canvas>
+        <div id="status-bar">Ready</div>
+        
+        <div id="drag-overlay">
+            <h1>Drop File Here</h1>
+        </div>
+    </div>
+
+<script>
+/* ---------------------------------------------------------------------------
+   APP STATE & CONFIG
+--------------------------------------------------------------------------- */
+const CONFIG = {
+    tileSize: 16,
+    tilesPerRow: 9, 
+    minZoom: 0.1,
+    maxZoom: 5.0
+};
+
+let data = {
+    tileSize: 16,
+    tilesPerRow: 9,
+    levels: []
+};
+
+let app = {
+    spritesheet: new Image(),
+    currentLevelIdx: 0,
+    currentLayerIdx: 0,
+    
+    // Viewport
+    scale: 2.0,
+    panX: 0,
+    panY: 0,
+    isPanning: false,
+    lastMouseX: 0,
+    lastMouseY: 0,
+    
+    // Editor State
+    isPainting: false,
+    mode: 'paint', // 'paint', 'select', 'pan'
+    selectedTile: null,
+    hoverX: 0,
+    hoverY: 0,
+
+    // Selection (Using 0-based indexing for WYSISYG)
+    selectedSpriteIdx: 1, 
+    selectedSpriteX: 1,
+    selectedSpriteY: 0
+};
+
+const canvas = document.getElementById('editor-canvas');
+const ctx = canvas.getContext('2d');
+const tilesetImg = document.getElementById('tileset-img');
+const tilesetSelection = document.getElementById('tileset-selection');
+const statusBar = document.getElementById('status-bar');
+const viewport = document.getElementById('viewport');
+
+/* ---------------------------------------------------------------------------
+   INITIALIZATION
+--------------------------------------------------------------------------- */
+function init() {
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    addLevel();
+
+    // Drag Drop
+    document.body.addEventListener('dragover', e => { e.preventDefault(); document.getElementById('drag-overlay').classList.add('active'); });
+    document.body.addEventListener('dragleave', e => { e.preventDefault(); document.getElementById('drag-overlay').classList.remove('active'); });
+    document.body.addEventListener('drop', handleFileDrop);
+
+    // Inputs
+    canvas.addEventListener('mousedown', handleMouseDown);
+    canvas.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    canvas.addEventListener('wheel', handleWheel, { passive: false });
+    tilesetImg.addEventListener('mousedown', handleTilesetClick);
+    document.getElementById('loadJsonInput').addEventListener('change', handleJsonUpload);
+    document.getElementById('level-select').addEventListener('change', loadLevelParams);
+
+    // Keyboard Shortcuts (Space for Pan)
+    window.addEventListener('keydown', e => { 
+        if(e.code === 'Space') {
+            keys['Space'] = true;
+            viewport.style.cursor = 'grab';
+        }
+    });
+    window.addEventListener('keyup', e => { 
+        if(e.code === 'Space') {
+            keys['Space'] = false;
+            viewport.style.cursor = app.mode === 'pan' ? 'grab' : 'default';
+            app.isPanning = false;
+        }
+    });
+
+    requestAnimationFrame(renderLoop);
+}
+
+function resizeCanvas() {
+    canvas.width = document.getElementById('viewport').clientWidth;
+    canvas.height = document.getElementById('viewport').clientHeight;
+    resetView();
+}
+
+function updateConfig() {
+    CONFIG.tilesPerRow = parseInt(document.getElementById('tilesPerRow').value) || 9;
+}
+
+function setMode(mode) {
+    app.mode = mode;
+    document.getElementById('btn-select').classList.toggle('active', mode === 'select');
+    document.getElementById('btn-paint').classList.toggle('active', mode === 'paint');
+    document.getElementById('btn-pan').classList.toggle('active', mode === 'pan');
+    
+    app.selectedTile = null;
+    document.getElementById('props-panel').style.display = 'none';
+
+    // Update cursor based on mode
+    viewport.className = (mode === 'pan') ? 'mode-pan' : '';
+}
+
+/* ---------------------------------------------------------------------------
+   SPRITESHEET LOGIC
+--------------------------------------------------------------------------- */
+function handleTilesetClick(e) {
+    const rect = tilesetImg.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Grid Coords
+    const gx = Math.floor(x / CONFIG.tileSize);
+    const gy = Math.floor(y / CONFIG.tileSize);
+    
+    // Store Selection (0-based linear index)
+    app.selectedSpriteX = gx;
+    app.selectedSpriteY = gy;
+    app.selectedSpriteIdx = (gy * CONFIG.tilesPerRow) + gx; 
+    
+    // Move Red Box
+    tilesetSelection.style.display = 'block';
+    tilesetSelection.style.width = CONFIG.tileSize + 'px';
+    tilesetSelection.style.height = CONFIG.tileSize + 'px';
+    tilesetSelection.style.left = (gx * CONFIG.tileSize) + 'px';
+    tilesetSelection.style.top = (gy * CONFIG.tileSize) + 'px';
+}
+
+/* ---------------------------------------------------------------------------
+   VIEWPORT LOGIC (ZOOM & PAN)
+--------------------------------------------------------------------------- */
+function screenToWorld(sx, sy) {
+    return {
+        x: (sx - app.panX) / app.scale,
+        y: (sy - app.panY) / app.scale
+    };
+}
+
+function resetView() {
+    app.scale = 2.0;
+    app.panX = canvas.width / 2;
+    app.panY = canvas.height / 2;
+}
+
+function handleWheel(e) {
+    e.preventDefault();
+    const zoomIntensity = 0.1;
+    const direction = e.deltaY < 0 ? 1 : -1;
+    const zoomFactor = 1 + (zoomIntensity * direction);
+
+    const mouseX = e.offsetX;
+    const mouseY = e.offsetY;
+
+    // Zoom towards mouse
+    const wx = (mouseX - app.panX) / app.scale;
+    const wy = (mouseY - app.panY) / app.scale;
+
+    let newScale = app.scale * zoomFactor;
+    newScale = Math.min(Math.max(newScale, CONFIG.minZoom), CONFIG.maxZoom);
+
+    app.panX = mouseX - wx * newScale;
+    app.panY = mouseY - wy * newScale;
+    app.scale = newScale;
+
+    updateStatus();
+}
+
+function handleMouseDown(e) {
+    // 1. Check for Panning Triggers (Middle Mouse OR Spacebar+Click OR Pan Tool)
+    const isMiddleClick = e.button === 1;
+    const isSpaceHeld = keys['Space'];
+    const isPanTool = app.mode === 'pan';
+
+    if (isMiddleClick || (isSpaceHeld && e.button === 0) || (isPanTool && e.button === 0)) {
+        app.isPanning = true;
+        app.lastMouseX = e.clientX;
+        app.lastMouseY = e.clientY;
+        viewport.style.cursor = 'grabbing';
+        e.preventDefault();
+        return;
+    }
+
+    // 2. Painting / Selecting Logic
+    const worldPos = screenToWorld(e.offsetX, e.offsetY);
+    const gx = Math.floor(worldPos.x / CONFIG.tileSize);
+    const gy = Math.floor(worldPos.y / CONFIG.tileSize);
+
+    if (e.button === 2) { 
+        removeTile(gx, gy); 
+        return; 
+    }
+
+    if (e.shiftKey || app.mode === 'select') {
+        selectTileForProps(gx, gy);
+    } else {
+        placeTile(gx, gy);
+        app.isPainting = true;
+    }
+}
+
+function handleMouseMove(e) {
+    const mouseX = e.clientX;
+    const mouseY = e.clientY;
+
+    if (app.isPanning) { 
+        const dx = mouseX - app.lastMouseX;
+        const dy = mouseY - app.lastMouseY;
+        app.panX += dx;
+        app.panY += dy;
+        app.lastMouseX = mouseX;
+        app.lastMouseY = mouseY;
+        return;
+    }
+    
+    // Reset cursor if not panning
+    if (keys['Space'] || app.mode === 'pan') {
+        viewport.style.cursor = 'grab';
+    } else {
+        viewport.style.cursor = 'default';
+    }
+    
+    app.lastMouseX = mouseX;
+    app.lastMouseY = mouseY;
+
+    const worldPos = screenToWorld(e.offsetX, e.offsetY);
+    app.hoverX = Math.floor(worldPos.x / CONFIG.tileSize);
+    app.hoverY = Math.floor(worldPos.y / CONFIG.tileSize);
+
+    updateStatus();
+
+    if (app.isPainting && e.buttons === 1 && app.mode !== 'pan') {
+        placeTile(app.hoverX, app.hoverY);
+    }
+}
+
+function handleMouseUp() {
+    app.isPainting = false;
+    app.isPanning = false; 
+    
+    // Restore correct cursor
+    if (keys['Space'] || app.mode === 'pan') {
+        viewport.style.cursor = 'grab';
+    } else {
+        viewport.style.cursor = 'default';
+    }
+}
+
+const keys = {};
+// Initial listeners moved to init()
+
+function updateStatus() {
+    statusBar.innerText = `Pos: ${app.hoverX}, ${app.hoverY} | Zoom: ${Math.round(app.scale * 100)}% | Selected Sprite ID: ${app.selectedSpriteIdx}`;
+}
+
+/* ---------------------------------------------------------------------------
+   FILE HANDLING
+--------------------------------------------------------------------------- */
+function handleFileDrop(e) {
+    e.preventDefault();
+    document.getElementById('drag-overlay').classList.remove('active');
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+
+    if (file.type.startsWith('image')) {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            app.spritesheet.src = evt.target.result;
+            tilesetImg.src = evt.target.result;
+        };
+        reader.readAsDataURL(file);
+    } else if (file.name.endsWith('.json')) {
+        const reader = new FileReader();
+        reader.onload = (evt) => loadJSON(evt.target.result);
+        reader.readAsText(file);
+    }
+}
+
+function handleJsonUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => loadJSON(evt.target.result);
+    reader.readAsText(file);
+}
+
+function loadJSON(jsonStr) {
+    try {
+        const parsed = JSON.parse(jsonStr);
+        data = parsed;
+        CONFIG.tileSize = data.tileSize || 16;
+        CONFIG.tilesPerRow = data.tilesPerRow || 9; // Fixed: Load rows
+        document.getElementById('tilesPerRow').value = CONFIG.tilesPerRow;
+        rebuildUI();
+    } catch(err) {
+        alert("Invalid JSON");
+    }
+}
+
+function exportJSON() {
+    data.tileSize = CONFIG.tileSize;
+    data.tilesPerRow = CONFIG.tilesPerRow;
+    const output = JSON.stringify(data, null, 2);
+    const blob = new Blob([output], {type: "application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "map.json";
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+/* ---------------------------------------------------------------------------
+   UI LOGIC
+--------------------------------------------------------------------------- */
+function rebuildUI() {
+    const lvlSel = document.getElementById('level-select');
+    lvlSel.innerHTML = '';
+    data.levels.forEach((lvl, idx) => {
+        const opt = document.createElement('option');
+        opt.value = idx;
+        opt.text = lvl.name || `Level ${idx+1}`;
+        lvlSel.appendChild(opt);
+    });
+    lvlSel.value = app.currentLevelIdx;
+    loadLevelParams();
+}
+
+function addLevel() {
+    data.levels.push({
+        name: "New Level",
+        totalKeys: 0,
+        isDark: false,
+        layers: [
+            { name: "Surface", tiles: [] },
+            { name: "Entities", tiles: [] }
+        ]
+    });
+    app.currentLevelIdx = data.levels.length - 1;
+    rebuildUI();
+}
+
+function loadLevelParams() {
+    const idx = parseInt(document.getElementById('level-select').value);
+    if (isNaN(idx)) return;
+    app.currentLevelIdx = idx;
+    app.currentLayerIdx = 0;
+    
+    const lvl = data.levels[idx];
+    document.getElementById('lvl-name').value = lvl.name;
+    document.getElementById('lvl-keys').value = lvl.totalKeys || 0;
+    document.getElementById('lvl-dark').checked = lvl.isDark || false;
+    renderLayerList();
+}
+
+function updateLevelMeta() {
+    const lvl = data.levels[app.currentLevelIdx];
+    lvl.name = document.getElementById('lvl-name').value;
+    lvl.totalKeys = parseInt(document.getElementById('lvl-keys').value);
+    lvl.isDark = document.getElementById('lvl-dark').checked;
+    const lvlSel = document.getElementById('level-select');
+    lvlSel.options[lvlSel.selectedIndex].text = lvl.name;
+}
+
+function renderLayerList() {
+    const list = document.getElementById('layer-list');
+    list.innerHTML = '';
+    const lvl = data.levels[app.currentLevelIdx];
+    
+    lvl.layers.forEach((layer, idx) => {
+        const div = document.createElement('div');
+        div.className = `layer-item ${idx === app.currentLayerIdx ? 'active' : ''}`;
+        
+        let icon = '⬜';
+        if(layer.name === 'Entities') icon = '👾';
+        else if(layer.name === 'Spikes') icon = '⚡';
+        else if(layer.name === 'HiddenArea') icon = '👁';
+        else if(layer.name === 'Keys') icon = '🔑';
+        
+        div.innerHTML = `
+            <div style="display:flex; align-items:center">
+                <span class="layer-icon">${icon}</span>
+                <span>${layer.name} <span style="color:#666; font-size:10px">(${layer.tiles.length})</span></span>
+            </div>
+            <span onclick="deleteLayer(${idx})" style="color:#666; cursor:pointer">✖</span>
+        `;
+        div.onclick = (e) => {
+            if(e.target.innerHTML === '✖') return;
+            app.currentLayerIdx = idx;
+            renderLayerList();
+            updateHiddenControls();
+        };
+        list.appendChild(div);
+    });
+    updateHiddenControls();
+}
+
+function addLayer() {
+    const type = document.getElementById('layer-type-add').value;
+    const lvl = data.levels[app.currentLevelIdx];
+    let newLayer = { name: type, tiles: [] };
+    if (type === "HiddenArea") newLayer.bounds = { x: 0, y: 0, w: 20, h: 15 };
+    lvl.layers.push(newLayer);
+    app.currentLayerIdx = lvl.layers.length - 1;
+    renderLayerList();
+}
+
+function deleteLayer(idx) {
+    if (!confirm("Delete layer?")) return;
+    data.levels[app.currentLevelIdx].layers.splice(idx, 1);
+    app.currentLayerIdx = Math.max(0, app.currentLayerIdx - 1);
+    renderLayerList();
+}
+
+function updateHiddenControls() {
+    const lvl = data.levels[app.currentLevelIdx];
+    const layer = lvl.layers[app.currentLayerIdx];
+    const div = document.getElementById('hidden-controls');
+    if (layer && layer.name === "HiddenArea") {
+        div.style.display = 'block';
+        document.getElementById('ha-x').value = layer.bounds.x;
+        document.getElementById('ha-y').value = layer.bounds.y;
+        document.getElementById('ha-w').value = layer.bounds.w;
+        document.getElementById('ha-h').value = layer.bounds.h;
+    } else {
+        div.style.display = 'none';
+    }
+}
+
+function saveHiddenBounds() {
+    const lvl = data.levels[app.currentLevelIdx];
+    const layer = lvl.layers[app.currentLayerIdx];
+    if (layer.bounds) {
+        layer.bounds.x = parseInt(document.getElementById('ha-x').value);
+        layer.bounds.y = parseInt(document.getElementById('ha-y').value);
+        layer.bounds.w = parseInt(document.getElementById('ha-w').value);
+        layer.bounds.h = parseInt(document.getElementById('ha-h').value);
+    }
+}
+
+/* ---------------------------------------------------------------------------
+   TILE MANIPULATION
+--------------------------------------------------------------------------- */
+function placeTile(x, y) {
+    const lvl = data.levels[app.currentLevelIdx];
+    const layer = lvl.layers[app.currentLayerIdx];
+    if (!layer) return;
+
+    const existingIdx = layer.tiles.findIndex(t => t.x === x && t.y === y);
+    const newTile = { x: x, y: y };
+
+    // ALWAYS save the visual preference for editing (Fixes "wrong tile appearing")
+    newTile.val = app.selectedSpriteIdx;
+
+    // Default Metadata
+    if (layer.name === "MovingPlatforms") {
+        newTile.minX = x * 32; 
+        newTile.maxX = (x + 5) * 32;
+        newTile.speed = 1.0;
+    }
+    if (layer.name === "Entities") newTile.type = "EnemyPatrol";
+
+    if (existingIdx >= 0) {
+        Object.assign(layer.tiles[existingIdx], newTile);
+        selectTileForProps(x, y); 
+    } else {
+        layer.tiles.push(newTile);
+    }
+}
+
+function removeTile(x, y) {
+    const lvl = data.levels[app.currentLevelIdx];
+    const layer = lvl.layers[app.currentLayerIdx];
+    if (!layer) return;
+    const idx = layer.tiles.findIndex(t => t.x === x && t.y === y);
+    if (idx >= 0) {
+        layer.tiles.splice(idx, 1);
+        document.getElementById('props-panel').style.display = 'none';
+    }
+}
+
+function selectTileForProps(x, y) {
+    const lvl = data.levels[app.currentLevelIdx];
+    const layer = lvl.layers[app.currentLayerIdx];
+    const tile = layer.tiles.find(t => t.x === x && t.y === y);
+    
+    const panel = document.getElementById('props-panel');
+    const pMove = document.getElementById('prop-moving');
+    const pEnt = document.getElementById('prop-entity');
+    
+    if (tile) {
+        app.selectedTile = tile;
+        panel.style.display = 'block';
+        document.getElementById('prop-coords').innerText = `Selected: ${x},${y} (${layer.name})`;
+        pMove.style.display = (layer.name === 'MovingPlatforms') ? 'block' : 'none';
+        pEnt.style.display = (layer.name === 'Entities') ? 'block' : 'none';
+        if (layer.name === 'MovingPlatforms') {
+            document.getElementById('p-minx').value = tile.minX || 0;
+            document.getElementById('p-maxx').value = tile.maxX || 0;
+            document.getElementById('p-speed').value = tile.speed || 1;
+        }
+        if (layer.name === 'Entities') {
+            document.getElementById('p-type').value = tile.type || 'EnemyPatrol';
+        }
+    } else {
+        panel.style.display = 'none';
+        app.selectedTile = null;
+    }
+}
+
+function saveTileProps() {
+    if (!app.selectedTile) return;
+    const tile = app.selectedTile;
+    if (document.getElementById('prop-moving').style.display === 'block') {
+        tile.minX = parseFloat(document.getElementById('p-minx').value);
+        tile.maxX = parseFloat(document.getElementById('p-maxx').value);
+        tile.speed = parseFloat(document.getElementById('p-speed').value);
+    }
+    if (document.getElementById('prop-entity').style.display === 'block') {
+        tile.type = document.getElementById('p-type').value;
+    }
+}
+
+/* ---------------------------------------------------------------------------
+   RENDERING LOOP
+--------------------------------------------------------------------------- */
+function getSpriteIndexForLayer(layerName, tile) {
+    if (tile.val !== undefined) return tile.val;
+
+    // Fallbacks if no visual set (e.g. legacy data)
+    if (layerName === "Spikes") return 68;
+    if (layerName === "Spring") return 8;
+    if (layerName === "Checkpoints") return 50;
+    if (layerName === "Fire") return 54;
+    if (layerName === "Keys") return 86;
+    if (layerName === "Breakable") return 21;
+    if (layerName === "LevelEnd") return 52;
+    if (layerName === "MovingPlatforms") return 13;
+    if (layerName === "FallingPlatform") return 14;
+    if (layerName === "Entities") return 67;
+    return 1; 
+}
+
+function renderLoop() {
+    ctx.fillStyle = "#1e1e1e";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    const TILE = CONFIG.tileSize;
+    
+    ctx.save();
+    ctx.translate(app.panX, app.panY);
+    ctx.scale(app.scale, app.scale);
+
+    // Draw Grid
+    const viewportTL = screenToWorld(0, 0);
+    const viewportBR = screenToWorld(canvas.width, canvas.height);
+    const startX = Math.floor(viewportTL.x / TILE) * TILE;
+    const endX = Math.floor(viewportBR.x / TILE) * TILE + TILE;
+    const startY = Math.floor(viewportTL.y / TILE) * TILE;
+    const endY = Math.floor(viewportBR.y / TILE) * TILE + TILE;
+
+    ctx.strokeStyle = "#333";
+    ctx.lineWidth = 1 / app.scale; 
+    ctx.beginPath();
+    for(let x = startX; x <= endX; x += TILE) { ctx.moveTo(x, startY); ctx.lineTo(x, endY); }
+    for(let y = startY; y <= endY; y += TILE) { ctx.moveTo(startX, y); ctx.lineTo(endX, y); }
+    ctx.stroke();
+
+    // Origin
+    ctx.strokeStyle = "#444";
+    ctx.lineWidth = 2 / app.scale;
+    ctx.beginPath();
+    ctx.moveTo(0, startY); ctx.lineTo(0, endY);
+    ctx.moveTo(startX, 0); ctx.lineTo(endX, 0);
+    ctx.stroke();
+
+    const lvl = data.levels[app.currentLevelIdx];
+    if (lvl) {
+        lvl.layers.forEach((layer, lIdx) => {
+            const isCurrent = (lIdx === app.currentLayerIdx);
+            ctx.globalAlpha = isCurrent ? 1.0 : 0.4;
+            
+            if (layer.name === "HiddenArea" && layer.bounds) {
+                ctx.strokeStyle = "#ffeb3b";
+                ctx.lineWidth = 2 / app.scale;
+                ctx.setLineDash([4/app.scale, 4/app.scale]);
+                ctx.strokeRect(
+                    layer.bounds.x * TILE, 
+                    layer.bounds.y * TILE, 
+                    layer.bounds.w * TILE, 
+                    layer.bounds.h * TILE
+                );
+                ctx.setLineDash([]);
+            }
+
+            layer.tiles.forEach(tile => {
+                if (tile.x * TILE > endX || tile.x * TILE + TILE < startX || 
+                    tile.y * TILE > endY || tile.y * TILE + TILE < startY) return;
+
+                const srcIdx = getSpriteIndexForLayer(layer.name, tile);
+                
+                const spriteRow = Math.floor(srcIdx / CONFIG.tilesPerRow); 
+                const spriteCol = srcIdx % CONFIG.tilesPerRow;
+                
+                const sx = spriteCol * TILE;
+                const sy = spriteRow * TILE;
+
+                if (app.spritesheet.complete && app.spritesheet.naturalWidth > 0) {
+                    ctx.drawImage(app.spritesheet, 
+                        sx, sy, TILE, TILE,
+                        tile.x * TILE, tile.y * TILE, TILE, TILE
+                    );
+                } else {
+                    ctx.fillStyle = isCurrent ? "#007acc" : "#555";
+                    ctx.fillRect(tile.x * TILE + 1, tile.y * TILE + 1, TILE - 2, TILE - 2);
+                }
+            });
+        });
+    }
+
+    ctx.globalAlpha = 1.0;
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 2 / app.scale;
+    ctx.strokeRect(app.hoverX * TILE, app.hoverY * TILE, TILE, TILE);
+
+    ctx.restore();
+    requestAnimationFrame(renderLoop);
+}
+
+// Init
+init();
+</script>
+</body>
+</html>

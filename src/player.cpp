@@ -109,11 +109,6 @@ void Player::render(SDL_Renderer *renderer)
     if (!_spriteSheet || !_spriteSheet->getTexture())
         return;
 
-    // Select sprite based on state
-    // Sprite sprite = (!_grounded) ? (_facingRight ? SpriteSheet::PLAYER_JUMP_RIGHT : SpriteSheet::PLAYER_JUMP_LEFT) : (facingRight ? SpriteSheet::PLAYER_IDLE_RIGHT : SpriteSheet::PLAYER_IDLE_LEFT);
-
-    // using that enemy as player for now : col : 3 , row , 6
-
     Sprite sprite = SpriteSheet::PLAYER_IDLE_LEFT;
 
     const int TILE_SIZE = config::tile::size;

@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
 
-CXX_INCLUDES = -I/Users/lazycodebaker/Documents/Dev/CPP/platformer_2d/include -isystem /opt/homebrew/Cellar/sdl2/2.32.10/include/SDL2 -isystem /opt/homebrew/Cellar/sdl2_image/2.8.8/include/SDL2 -isystem /opt/homebrew/include -isystem /Users/lazycodebaker/miniconda3/include
+CXX_INCLUDES = -I/Users/lazycodebaker/Documents/Dev/CPP/platformer_2d_temp/include -isystem /opt/homebrew/Cellar/sdl2/2.32.10/include/SDL2 -isystem /opt/homebrew/Cellar/sdl2_image/2.8.8/include/SDL2 -isystem /opt/homebrew/Cellar/sdl2_ttf/2.24.0/include/SDL2 -isystem /opt/homebrew/include -isystem /Users/lazycodebaker/miniconda3/include
 
 CXX_FLAGSarm64 = -std=c++17 -arch arm64
 
